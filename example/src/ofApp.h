@@ -23,4 +23,13 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 	
 		ofxImGui::Gui gui;
+	
+	
+		bool  soundOn = true;
+		float health = 0.75f;
+		int   selectedMenu = 0;
+		char  emailBuf[128] = "";
+		bool  emailValid = true;
+
+		ofxImAnim::Toast toast;   // single toast demo
 };
