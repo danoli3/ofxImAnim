@@ -61,7 +61,20 @@ public:
 
 	static void FireToast(Toast& toast, const char* message, float duration = 4.0f);
 	static void UpdateToasts(Toast* toasts, int count);
+	
+	// Gradient Keyframes
+	static void GradientHealthBar(float fraction, const char* label = nullptr);
+
+	// Clip-based Text Animations
+	static void FadeText(const char* text, float alpha = 1.0f, float duration = 0.8f);
+	static void ComplexText(const char* text);           // plays a rich sequenced animation
+	static void LoopingText(const char* text);           // continuous looping text effect
+	
+	
+	
+	
 	static void ShowToast(Toast& toast);   // internal
+	
 	
 	static ofVec2f tween(ofVec2f target, float duration, iam_ease_desc ease,
 						 int policy = iam_policy_crossfade, float dt = 0.0f,

@@ -79,20 +79,43 @@ bool ofxImAnim::AnimatedToggle(const char* label, bool* v, float duration) {
 
 bool ofxImAnim::HoverCard(const char* label, ImVec2 size) {
 	ImGuiID id = ImGui::GetID(label);
-	bool hovered = ImGui::IsItemHovered();
 
-	float lift  = tween_float(id,     hovered ? -8.0f : 0.0f, 0.25f, iam_ease_preset(iam_ease_out_cubic));
-	float scale = tween_float(id + 1, hovered ? 1.04f : 1.0f, 0.20f, iam_ease_preset(iam_ease_out_back));
-
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + lift);
-
-	// Manual scaling for compatibility
+	ImVec2 pos = ImGui::GetCursorScreenPos();
 	ImVec2 textSize = ImGui::CalcTextSize(label);
-	ImVec2 buttonSize = (size.x > 0 && size.y > 0) ? size : ImVec2(textSize.x * scale + 24, textSize.y * scale + 16);
+	if (size.x == 0) size.x = textSize.x + 48;
+	if (size.y == 0) size.y = textSize.y + 32;
 
-	return ImGui::Button(label, buttonSize);
+	// Animation values
+	bool hovered = false;
+	float lift  = tween_float(id,     0.0f, 0.22f, iam_ease_preset(iam_ease_out_cubic));
+	float scale = tween_float(id + 1, 1.0f, 0.18f, iam_ease_preset(iam_ease_out_back));
+
+	// InvisibleButton for reliable hover/click detection
+	ImGui::InvisibleButton(label, size);
+	hovered = ImGui::IsItemHovered();
+
+	// Update animations based on hover state
+	lift  = tween_float(id,     hovered ? -8.0f : 0.0f, 0.22f, iam_ease_preset(iam_ease_out_cubic));
+	scale = tween_float(id + 1, hovered ? 1.03f : 1.0f, 0.18f, iam_ease_preset(iam_ease_out_back));
+
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+
+	// Shadow
+	ImVec2 shadowPos(pos.x + 4, pos.y + 8 + lift);
+	dl->AddRectFilled(shadowPos, ImVec2(shadowPos.x + size.x, shadowPos.y + size.y),
+					  IM_COL32(0, 0, 0, 60), 8.0f);
+
+	// Card background
+	ImVec2 cardPos(pos.x, pos.y + lift);
+	dl->AddRectFilled(cardPos, ImVec2(cardPos.x + size.x, cardPos.y + size.y),
+					  IM_COL32(45, 45, 55, 255), 8.0f);
+
+	// Text (centered)
+	ImVec2 textPos(cardPos.x + (size.x - textSize.x) * 0.5f, cardPos.y + (size.y - textSize.y) * 0.5f);
+	dl->AddText(textPos, IM_COL32(240, 240, 240, 255), label);
+
+	return hovered && ImGui::IsMouseClicked(0);
 }
-
 // PulsingIcon
 void ofxImAnim::PulsingIcon(const char* icon, ImU32 color) {
 	ImGuiID id = ImGui::GetID(icon);
@@ -185,6 +208,110 @@ void ofxImAnim::ShowToast(Toast& toast) {
 
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
+}
+
+
+// ===================================================================
+// GRADIENT KEYFRAMES + HEALTHBAR
+// ===================================================================
+
+void ofxImAnim::GradientHealthBar(float fraction, const char* label) {
+	ImGuiID id = ImGui::GetID("health_gradient");
+
+	// Define two gradients for smooth transition
+	iam_gradient grad_low;
+	grad_low.add(0.0f, ImVec4(0.9f, 0.1f, 0.1f, 1.0f))
+			.add(0.4f, ImVec4(0.9f, 0.6f, 0.1f, 1.0f));
+
+	iam_gradient grad_high;
+	grad_high.add(0.0f, ImVec4(0.1f, 0.8f, 0.2f, 1.0f))
+			 .add(1.0f, ImVec4(0.3f, 0.9f, 0.4f, 1.0f));
+
+	iam_gradient current = iam_tween_gradient(id, 0, grad_high, 0.6f,
+											  iam_ease_preset(iam_ease_out_cubic),
+											  iam_policy_crossfade, iam_col_oklab, ofGetLastFrameTime());
+
+	// Draw gradient bar
+	ImVec2 bar_pos = ImGui::GetCursorScreenPos();
+	ImVec2 bar_size(280, 28);
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+
+	int segments = 40;
+	float fill_w = bar_size.x * fraction;
+	for (int i = 0; i < segments; i++) {
+		float t0 = (float)i / segments;
+		float t1 = (float)(i + 1) / segments;
+		if (t1 * bar_size.x > fill_w) break;
+
+		ImVec4 c = current.sample(t0);
+		ImU32 col = ImGui::ColorConvertFloat4ToU32(c);
+
+		dl->AddRectFilled(
+			ImVec2(bar_pos.x + t0 * bar_size.x, bar_pos.y),
+			ImVec2(bar_pos.x + ImMin(t1 * bar_size.x, fill_w), bar_pos.y + bar_size.y),
+			col, 6.0f);
+	}
+
+	dl->AddRect(bar_pos, ImVec2(bar_pos.x + bar_size.x, bar_pos.y + bar_size.y),
+				IM_COL32(80, 80, 90, 255), 6.0f, 0, 2.0f);
+
+	if (label) ImGui::Text("%s", label);
+	ImGui::Dummy(bar_size);
+}
+
+// ===================================================================
+// CLIP-BASED TEXT ANIMATIONS
+// ===================================================================
+
+void ofxImAnim::FadeText(const char* text, float alpha, float duration) {
+	ImGuiID id = ImGui::GetID(text);
+	float a = tween_float(id, alpha, duration, iam_ease_preset(iam_ease_out_quad));
+	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, a);
+	ImGui::Text("%s", text);
+	ImGui::PopStyleVar();
+}
+
+void ofxImAnim::ComplexText(const char* text) {
+	static ImGuiID clip_id = 0;
+	if (clip_id == 0) {
+		// One-time complex clip setup
+		clip_id = ImHashStr("complex_text_clip");
+		iam_clip::begin(clip_id)
+			.key_float(ImHashStr("alpha"), 0.0f, 0.0f, iam_ease_out_cubic)
+			.key_float(ImHashStr("alpha"), 0.6f, 1.0f, iam_ease_out_cubic)
+			.key_float(ImHashStr("scale"), 0.0f, 0.6f, iam_ease_out_back)
+			.key_float(ImHashStr("scale"), 0.8f, 1.05f, iam_ease_in_out_cubic)
+			.key_float(ImHashStr("scale"), 1.2f, 1.0f, iam_ease_out_cubic)
+			.end();
+	}
+
+	static ImGuiID inst_id = ImHashStr("complex_text_inst");
+	if (!iam_get_instance(inst_id).valid()) {
+		iam_play(clip_id, inst_id);
+	}
+
+	iam_instance inst = iam_get_instance(inst_id);
+	float alpha = 1.0f, scale = 1.0f;
+	if (inst.valid()) {
+		inst.get_float(ImHashStr("alpha"), &alpha);
+		inst.get_float(ImHashStr("scale"), &scale);
+	}
+
+	ImGui::SetWindowFontScale(scale);
+	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
+	ImGui::Text("%s", text);
+	ImGui::PopStyleVar();
+	ImGui::SetWindowFontScale(1.0f);
+}
+
+void ofxImAnim::LoopingText(const char* text) {
+	ImGuiID id = ImGui::GetID(text);
+	float pulse = tween_float(id, 1.0f, 1.8f, iam_ease_preset(iam_ease_in_out_sine));
+	float scale = 1.0f + pulse * 0.08f;
+
+	ImGui::SetWindowFontScale(scale);
+	ImGui::Text("%s", text);
+	ImGui::SetWindowFontScale(1.0f);
 }
 
 // UpdateToasts

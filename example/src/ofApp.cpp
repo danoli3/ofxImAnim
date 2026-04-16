@@ -72,7 +72,43 @@ void ofApp::draw() {
 				ofxImAnim::FireToast(toast, "Operation completed successfully!", 3.5f);
 			}
 		}
+		
 
+		if (ImGui::CollapsingHeader("Interactive Text Animations (click to retrigger)", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+			// 1. Fade Text - click to fade in again
+			if (ImGui::InvisibleButton("FadeTextArea", ImVec2(ImGui::GetContentRegionAvail().x, 40))) {
+				// Force retrigger by using a new ID or resetting
+				static int fadeCounter = 0;
+				fadeCounter++;
+				ofxImAnim::FadeText("This text fades in smoothly", 0.0f, 1.2f); // start from invisible
+			}
+			ofxImAnim::FadeText("This text fades in smoothly", 1.0f, 1.2f);
+
+			ImGui::Spacing();
+
+			// 2. Complex Text - click to replay the full sequence
+			if (ImGui::InvisibleButton("ComplexTextArea", ImVec2(ImGui::GetContentRegionAvail().x, 40))) {
+				// Retrigger the clip
+				static ImGuiID complexInst = ImHashStr("complex_text_inst");
+				iam_instance inst = iam_get_instance(complexInst);
+				if (inst.valid()) inst.destroy();
+				ofxImAnim::ComplexText("Complex sequenced text!");
+			}
+			ofxImAnim::ComplexText("Complex sequenced text!");
+
+			ImGui::Spacing();
+
+			// 3. Looping Text - click to reset the pulse
+			if (ImGui::InvisibleButton("LoopingTextArea", ImVec2(ImGui::GetContentRegionAvail().x, 40))) {
+				static int loopCounter = 0;
+				loopCounter++;
+				ofxImAnim::LoopingText("Looping pulse animation");
+			}
+			ofxImAnim::LoopingText("Looping pulse animation");
+		}
+
+		ImGui::Separator();
 		// Show any active toast
 		ofxImAnim::UpdateToasts(&toast, 1);
 
