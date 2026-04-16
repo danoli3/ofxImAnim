@@ -41,3 +41,9 @@
 *.dwo
 example/example.xcodeproj/project.xcworkspace/xcuserdata
 example/example.xcodeproj/xcshareddata
+config.make
+Makefile
+of.entitlements
+openFrameworks-Info.plist
+Project.xcconfig
+example/example.xcodeproj
