@@ -1,5 +1,7 @@
 # ofxImAnim
 
+![ofxaddons_thumbnail](ofxaddons_thumbnail.png)
+
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](../LICENSE)
 
 ![ImAnimDemo_Hero_1 0 0](https://github.com/user-attachments/assets/a9e7931c-7e31-4585-80dc-9ac93664ec3e)
